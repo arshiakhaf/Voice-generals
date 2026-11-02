@@ -18,6 +18,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build")
 PREVIEW = os.path.join(ROOT, "preview")
 
+EMO_FA = {
+    "neutral": "معمولی", "angry": "عصبانی", "furious": "جوشی", "tired": "خسته",
+    "smug": "پزدار", "panic": "هراسان", "scream": "دادِ بلند",
+    "muttering": "زیرلبی", "deadpan": "خشک",
+}
+
 TAG_FA = {
     "dirty": "رکیک",
     "dirty-name": "فحش ناموسی",
@@ -64,6 +70,9 @@ def main(argv):
             ready = os.path.isfile(os.path.join(sounds, row["wav"] + ".wav"))
             rendered += 1 if ready else 0
             tags = " ".join('<i class="t">%s</i>' % TAG_FA.get(t, t) for t in row.get("tags", []))
+            emo = row.get("emotion")
+            if emo:
+                tags = '<i class="e">%s</i>' % EMO_FA.get(emo, emo) + tags
             player = ('<audio controls preload="none" src="%s"></audio>' % src if ready
                       else '<span class="todo">صدا هنوز ساخته نشده</span>')
             rows.append(
@@ -90,6 +99,7 @@ h2 .count{background:#2a2d22;padding:1px 7px;border-radius:9px;color:#b7f07a;fon
 audio{grid-row:1/3;align-self:center;height:32px}
 .todo{grid-row:1/3;align-self:center;font-size:12px;color:#6d7060;border:1px dashed #3a3d2e;border-radius:12px;padding:4px 10px}
 code{color:#d8d6c8}
+i.e{font-style:normal;font-size:11px;background:#3a2a1c;color:#e2b25a;padding:1px 7px;border-radius:8px;margin-inline-end:4px}
 i.t{font-style:normal;font-size:11px;background:#22261a;color:#a8c98a;padding:1px 6px;border-radius:8px;margin-inline-start:5px}
 </style></head><body>
 <h1>%(title)s</h1>

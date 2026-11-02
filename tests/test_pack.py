@@ -64,6 +64,17 @@ class PackCoverage(unittest.TestCase):
             self.assertGreaterEqual(sum(text.count(w) for w in tone.get("allowed_dirty", [])), 40,
                                     "pack is supposed to be explicit")
 
+    def test_every_line_has_emotion_and_speech_text(self):
+        for path in packs():
+            pack, _, _ = load_pack(path)
+            for unit in pack["units"]:
+                for event, spec in unit["events"].items():
+                    for f in spec["files"]:
+                        self.assertIn("emotion", f, "%s: no emotion" % f["wav"])
+                        self.assertTrue(f.get("tts"), "%s: no tts text" % f["wav"])
+                        self.assertNotEqual(f["emotion"], "neutral",
+                                            "%s: every unit line should be acted" % f["wav"])
+
     def test_objects_exist(self):
         objects = json.load(open(os.path.join(ROOT, "data", "object_voices.json")))
         for path in packs():

@@ -72,6 +72,8 @@ def plan(pack, events, objects):
                     "label_fa": spec.get("label_fa", event_name),
                     "wav": f["wav"],
                     "line": f["line_fa"],
+                    "speak": f.get("tts") or f["line_fa"],
+                    "emotion": f.get("emotion", "neutral"),
                     "tags": f.get("tags", []),
                 })
     return jobs, problems
@@ -106,7 +108,9 @@ MASTER_FILTER = (
     "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06,"
     "areverse,"
     "acompressor=threshold=-18dB:ratio=2.5:attack=5:release=80,"
-    "alimiter=limit=0.89,"
+    "dynaudnorm=f=200:g=5:p=0.9:m=8,"      # even out the line before the limiter
+    "alimiter=limit=0.97,"
+    "volume=1.4dB,"
     "atempo=%(tempo)s"
 )
 DEFAULT_TEMPO = 1.12
@@ -163,6 +167,12 @@ def synthesize_placeholder(job, path, fmt):
         w.writeframes(bytes(frames))
 
 
+def synthesize_neural(voice, job, path, fmt):
+    """Piper VITS Persian + emotion layer (tools/tts_engine.py)."""
+    from tts_engine import clean_text
+    voice.synth(clean_text(job["speak"]), path, emotion=job["emotion"])
+
+
 def synthesize_espeak(job, path, fmt, lang="fa"):
     """Optional local TTS (espeak-ng) so the pipeline can be heard end to end."""
     exe = shutil.which("espeak-ng") or shutil.which("espeak")
@@ -191,6 +201,7 @@ def write_install_layout(pack, jobs, out_dir, fmt):
         info = wav_info(dst)
         manifest.append({"wav": job["wav"], "event": job["event"], "object": job["object"],
                          "label_fa": job["label_fa"], "line_fa": job["line"],
+                         "emotion": job.get("emotion", "neutral"),
                          "tags": job["tags"], "seconds": round(info["seconds"], 3)})
     json.dump(manifest, open(os.path.join(out_dir, "manifest.json"), "w"),
               ensure_ascii=False, indent=1)
@@ -209,7 +220,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("pack")
     ap.add_argument("--list", action="store_true", help="print the plan and exit")
-    ap.add_argument("--engine", choices=["tone", "espeak", "audio-dir"], default="audio-dir")
+    ap.add_argument("--engine", choices=["tone", "espeak", "neural", "audio-dir"], default="neural")
     ap.add_argument("--audio-dir", help="folder of <wav>.wav renders (--engine audio-dir)")
     ap.add_argument("--out", default=os.path.join(BUILD))
     ap.add_argument("--big", action="store_true", help="also emit a .big archive")
@@ -233,10 +244,16 @@ def main(argv=None):
 
     render_dir = os.path.join(args.out, pack["pack"], "_rendered")
     os.makedirs(render_dir, exist_ok=True)
+    neural = None
+    if args.engine == "neural":
+        from tts_engine import Voice
+        neural = Voice()
     for job in jobs:
         dst = os.path.join(render_dir, job["wav"] + ".wav")
         if args.engine == "tone":
             synthesize_placeholder(job, dst, fmt)
+        elif args.engine == "neural":
+            synthesize_neural(neural, job, dst, fmt)
         elif args.engine == "espeak":
             synthesize_espeak(job, dst, fmt)
         else:
@@ -253,10 +270,11 @@ def main(argv=None):
     out_dir = os.path.join(args.out, pack["pack"], "mod")
     sound_dir, manifest = write_install_layout(pack, jobs, out_dir, fmt)
     print("\nsounds    : %d wav -> %s" % (len(manifest), sound_dir))
-    if args.big:
-        big = os.path.join(BUILD, pack["pack"] + ".big")
-        total = write_big(pack, sound_dir, big)
-        print("big       : %s (%d bytes)" % (big, total))
+    if args.big or True:  # always refresh the archive: mastering may have changed the wavs
+        if args.big:
+            big = os.path.join(BUILD, pack["pack"] + ".big")
+            total = write_big(pack, sound_dir, big)
+            print("big       : %s (%d bytes)" % (big, total))
     return 1 if problems else 0
 
 

@@ -11,7 +11,8 @@
 | زبان | فارسی محاوره‌ای + فینگلیش |
 | فرمت خروجی | WAV، مونو، 22050Hz، 16bit PCM |
 | مسیر نصب | `<game>/Data/Audio/Sounds/` یا `.big` با سوییچ `-mod` |
-| وضعیت | بولدوزر آمریکا ✅ — بقیهٔ یونیت‌ها در نوبت |
+| موتور صدا | VITS/Piper فارسی (espeak-ng fa) + لایهٔ احساس |
+| وضعیت | بولدوزر آمریکا ✅ **۴۱/۴۱ فایل آماده** |
 
 ## چرا نام فایل‌ها مهم است
 
@@ -47,7 +48,9 @@ tools/fetch_vanilla.py  گرفتن INIهای اصلی بازی (کش در .cache
 tools/build_data.py     تبدیل INI به JSON
 tools/build_pack.py     ساخت پک: تمیزکاری صدا + چک پوشش + انتشار + .big
 tools/big.py            خواندن/نوشتن آرشیو BIGF (جایگزین FinalBIG)
+tools/tts_engine.py      موتور TTS عصبی فارسی + ۹ حالت احساس
 tools/preview.py        ساخت صفحهٔ پخش HTML برای گوش‌دادن به کل پک
+tools/make_demo.py      چسباندن همهٔ خط‌ها به یک mp3
 docs/INSTALL.md         راهنمای نصب
 docs/SOURCING.md        مستند صحت نگاشت صداها
 ```
@@ -58,12 +61,29 @@ docs/SOURCING.md        مستند صحت نگاشت صداها
 python3 tools/fetch_vanilla.py                 # INIهای اصلی را بگیر (یک‌بار)
 python3 tools/build_data.py                    # دیتابیس JSON
 python3 tools/build_pack.py data/packs/usa_dozer.json --list   # چک پلن
-python3 tools/build_pack.py data/packs/usa_dozer.json --big    # ساخت پک + آرشیو
+python3 tools/tts_engine.py --setup                            # گرفتن مدل صدا (یک‌بار)
+python3 tools/build_pack.py data/packs/usa_dozer.json --engine neural --big
 python3 tools/preview.py usa_dozer             # صفحهٔ گوش‌دادن
 ```
 
 `build_pack.py` تک‌تک فایل‌ها را چک می‌کند: هر فایل در رویداد اصلی موجود باشد و
 هیچ فایلی از قلم نیفتد (بولدوزر = ۴۱ از ۴۱ فایل در ۹ رویداد).
+
+## صدا چطور ساخته می‌شود
+
+هر خط در `data/packs/*.json` سه چیز دارد: متن نهایی (`line_fa`)، متنی که به TTS داده
+می‌شود (`tts`، با املای محاوره‌ای که espeak درست بخواند) و حس (`emotion`).
+`tools/tts_engine.py` صدا را با مدل عصبی می‌سازد و بعد حس را با تغییر مستقل پیچ/فرمَنت
+(`rubberband`) و درایو/کمپرس اعمال می‌کند.
+
+| حس | کجا استفاده شد (بولدوزر) |
+|---|---|
+| `furious` | «بله قربان! کیرُم تو این ارتش...» |
+| `scream` | «برو کنار کُصخُل!»، «تمام شد کُصکِش!» |
+| `panic` | «پول نداری! دولت تعطیل کرده»، «خم شو! یکی دیگه پیدا کردم» |
+| `tired` | «دارم می‌رَم، کیرُم تو این سرعت» |
+| `smug` | «برج می‌سازم؛ قیمتش؟ یه کیر تو پنتاگون» |
+| `deadpan` | «بولدوزر آماده‌ست کُصخُل، فقط بیل دارم» |
 
 ## نصب در بازی
 
