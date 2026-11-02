@@ -1,6 +1,6 @@
 {
   "pack": "usa_dozer",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "title_fa": "بولدوزر آمریکا — پک «بیل و بودجه»",
   "title_en": "USA Dozer - 'Blade & Budget' pack",
   "updated": "2026-11-02",
@@ -38,15 +38,15 @@
     "language": "fa",
     "gender": "masculine",
     "use_case": "characters",
-    "notes": "Persian street slang + Finglish. Keep every take dry, punchy, 2-4s; the engine randomises and pitch-shifts."
+    "notes": "One voice for the whole unit: each clip's median f0 is pulled to pitch_hz with formants preserved, so lines differ in delivery only. Emotion changes pace/air only - never pitch or formants. 92 Hz keeps the average correction under 2 semitones, which is where rubberband still sounds natural.",
+    "pitch_hz": 92.0
   },
   "format": {
     "sample_rate": 22050,
     "channels": 1,
     "bits": 16,
     "codec": "pcm_s16le",
-    "max_seconds": 5,
-    "tempo": 1.12
+    "max_seconds": 5
   },
   "units": [
     {

@@ -83,6 +83,35 @@ class PackCoverage(unittest.TestCase):
                 self.assertIn(unit["object"], objects)
 
 
+class VoiceConsistency(unittest.TestCase):
+    """A unit must sound like one person: pitch per clip may act, not wander."""
+
+    def test_rendered_pitch_is_locked(self):
+        import glob
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        from pitch_stats import summary
+        base = os.path.join(ROOT, "build")
+        for pack_path in packs():
+            pack, _, _ = load_pack(pack_path)
+            sounds = os.path.join(base, pack["pack"], "mod", "Data", "Audio", "Sounds")
+            if not os.path.isdir(sounds):
+                self.skipTest("pack not rendered yet")
+            target = pack.get("voice", {}).get("pitch_hz", 100.0)
+            meds = []
+            for wav in glob.glob(os.path.join(sounds, "*.wav")):
+                s = summary(wav)
+                if s:
+                    meds.append(s["median"])
+            self.assertGreater(len(meds), 30)
+            median = sorted(meds)[len(meds) // 2]
+            # the middle of the pack sits on the declared pitch...
+            self.assertLess(abs(12 * __import__("math").log2(median / target)), 1.5,
+                            "median %0.1f Hz is not the declared %0.1f Hz" % (median, target))
+            # ...and no clip is more than a fifth away from it
+            worst = max(abs(12 * __import__("math").log2(m / target)) for m in meds)
+            self.assertLess(worst, 7.0, "a clip drifted %.1f semitones from the unit voice" % worst)
+
+
 class BigFormat(unittest.TestCase):
     def test_roundtrip(self):
         import tempfile

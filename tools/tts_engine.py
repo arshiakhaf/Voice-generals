@@ -22,6 +22,7 @@ CLI:
 import argparse
 import json
 import os
+import math
 import re
 import shutil
 import subprocess
@@ -40,17 +41,24 @@ SOURCE_REPO = "gyroing/Persian-Piper-TTS-WebAssembly"
 # ---------------------------------------------------------------------------
 # emotions: what the dozer feels when he says the line
 # ---------------------------------------------------------------------------
+# A unit keeps ONE voice. Emotion only changes how the line is delivered (pace,
+# expressiveness, air), never the pitch or the formants - those are locked per clip to
+# VOICE_PITCH_HZ below, otherwise every line sounds like a different person.
 EMOTIONS = {
-    "neutral":   dict(length=1.00, pitch=0,   formant=0,   drive=0.0, lowpass=0,  pace=1.00),
-    "angry":     dict(length=0.92, pitch=-3,  formant=-6,  drive=0.55, lowpass=0,  pace=1.00),
-    "furious":   dict(length=0.86, pitch=-1,  formant=-10, drive=0.95, lowpass=0,  pace=1.00),
-    "tired":     dict(length=1.18, pitch=-5,  formant=0,   drive=0.0, lowpass=5500, pace=1.00),
-    "smug":      dict(length=1.10, pitch=1,   formant=4,   drive=0.15, lowpass=0,  pace=1.00),
-    "panic":     dict(length=0.80, pitch=6,   formant=8,   drive=0.20, lowpass=0,  pace=1.00),
-    "scream":    dict(length=0.78, pitch=3,   formant=3,   drive=1.35, lowpass=0,  pace=1.00),
-    "muttering": dict(length=1.25, pitch=-6,  formant=-2,  drive=0.10, lowpass=4200, pace=1.00),
-    "deadpan":   dict(length=1.06, pitch=-2,  formant=-1,  drive=0.25, lowpass=0,  pace=1.00),
+    "neutral":   dict(length=1.00, noise=0.55, gain=0.0, tone=None),
+    "angry":     dict(length=0.93, noise=0.66, gain=1.0, tone="edge"),
+    "furious":   dict(length=0.88, noise=0.70, gain=1.8, tone="edge"),
+    "tired":     dict(length=1.16, noise=0.48, gain=-1.0, tone="dull"),
+    "smug":      dict(length=1.09, noise=0.58, gain=0.0, tone=None),
+    "panic":     dict(length=0.84, noise=0.68, gain=1.2, tone="edge"),
+    "scream":    dict(length=0.80, noise=0.72, gain=2.4, tone="edge"),
+    "muttering": dict(length=1.22, noise=0.45, gain=-1.5, tone="dull"),
+    "deadpan":   dict(length=1.05, noise=0.50, gain=0.0, tone=None),
 }
+
+# One target for the whole unit: median f0 of every clip is pulled to this value.
+VOICE_PITCH_HZ = 92.0   # nearest common point to the model's own register (raw median 96 Hz): least pitch correction
+MAX_PITCH_CORRECTION_SEMITONES = 4.0   # beyond this rubberband smears the consonants
 
 
 def find_ffmpeg():
@@ -167,8 +175,9 @@ def write_piper_config(onnx_path, cfg_path):
 # synthesis
 # ---------------------------------------------------------------------------
 class Voice:
-    def __init__(self, model_dir=None):
+    def __init__(self, model_dir=None, target_hz=None):
         self.model_dir = model_dir or MODEL_DIR
+        self.target_hz = float(target_hz or VOICE_PITCH_HZ)
         onnx = os.path.join(self.model_dir, "model.onnx")
         if not os.path.isfile(onnx):
             raise SystemExit("voice missing - run: python3 tools/tts_engine.py --setup")
@@ -176,49 +185,94 @@ class Voice:
         self.voice = PiperVoice.load(onnx, config_path=onnx + ".json")
         self.sample_rate = self.voice.config.sample_rate
 
-    def synth(self, text, path, emotion="neutral", length_scale=None, noise_scale=None):
+    def synth(self, text, path, emotion="neutral", length_scale=None, lock=True):
+        """Render one line and keep it inside the unit's single voice."""
+        import tempfile
         from piper import SynthesisConfig
+
         e = EMOTIONS.get(emotion, EMOTIONS["neutral"])
         cfg = SynthesisConfig(
             length_scale=length_scale if length_scale is not None else e["length"],
-            noise_scale=noise_scale if noise_scale is not None else (0.667 if emotion == "neutral" else 0.8),
+            noise_scale=e["noise"],
             noise_w_scale=0.8,
             normalize_audio=True,
         )
         raw = path + ".raw.wav"
         with wave.open(raw, "wb") as wf:
             self.voice.synthesize_wav(text, wf, syn_config=cfg)
-        apply_emotion(raw, path, e)
+
+        if not lock:
+            shape_to_voice(raw, path, e, 1.0, None)
+            os.remove(raw)
+            return path
+
+        # Two passes: shift once, measure what actually came out, shift the
+        # residual (<=1.5 st) once more. One pass leaves up to 3 st of drift on
+        # short lines, which is exactly what made the unit sound like several people.
+        ratio = pitch_ratio_for(raw, target_hz=self.target_hz)
+        first = path + ".pass1.wav"
+        shape_to_voice(raw, first, e, ratio, self.target_hz)
+        residual = pitch_ratio_for(first, target_hz=self.target_hz, limit=1.5)
+        if abs(12.0 * math.log2(residual)) > 0.2:
+            shape_to_voice(first, path, NEUTRAL_SHAPE, residual, self.target_hz)
+            os.remove(first)
+        else:
+            os.replace(first, path)
         os.remove(raw)
         return path
 
 
-def apply_emotion(src, dst, e, ffmpeg=None):
-    """Pitch/formant/drive shaping that does not change the words."""
+NEUTRAL_SHAPE = dict(length=1.0, noise=0.0, gain=0.0, tone=None)
+
+
+def pitch_ratio_for(path, target_hz=VOICE_PITCH_HZ, limit=MAX_PITCH_CORRECTION_SEMITONES):
+    """How far this clip has to move to sit on the unit's pitch."""
+    from pitch_stats import f0_track
+    f = f0_track(path)
+    if len(f) < 5:
+        return 1.0
+    measured = float(__import__("numpy").median(f))
+    if measured <= 0:
+        return 1.0
+    semis = 12.0 * __import__("math").log2(target_hz / measured)
+    semis = max(-limit, min(limit, semis))
+    return 2.0 ** (semis / 12.0)
+
+
+def shape_to_voice(src, dst, e, ratio=1.0, target_hz=None, ffmpeg=None):
+    """Trim, pitch-lock, gentle tone, one compressor, limiter.
+
+    Deliberately minimal: no formant warping and no soft clipping, both of which make
+    speech sound synthetic. Pitch is corrected once, with formants preserved, so the
+    timbre stays the same on every line.
+    """
     ffmpeg = ffmpeg or find_ffmpeg()
-    chain = []
-    # rubberband keeps duration while moving pitch and formants separately:
-    # lowering formants (+pitch) reads as a bigger, angrier chest voice.
-    pitch = e["pitch"] + (e["formant"] * 0.35)
-    if abs(pitch) > 0.01 or abs(e["formant"]) > 0.01:
-        # this ffmpeg build exposes pitch + formant mode but no separate formant ratio,
-        # so the formant component is folded into the pitch move (still reads as chest voice)
-        chain.append("rubberband=pitch=%.3f:formant=shifted:pitchq=quality"
-                     % (2 ** (pitch / 12.0)))
-    if e.get("lowpass"):
-        chain.append("lowpass=f=%d" % e["lowpass"])
-    if e.get("drive"):
-        # a soft clipper adds the "shouting through a cheap mic" grit
-        chain.append("asoftclip=type=tanh:threshold=%.2f" % max(0.2, 0.9 - e["drive"] * 0.5))
-    chain += [
-        "highpass=f=85",
-        "equalizer=f=220:t=q:w=1.0:g=1.5",
-        "equalizer=f=3200:t=q:w=1.2:g=%.1f" % (2.5 + e.get("drive", 0) * 2),
-        "acompressor=threshold=-20dB:ratio=3:attack=4:release=90",
-        "alimiter=limit=0.91",
+    af = [
+        "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05",
+        "areverse",
+        "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.08",
+        "areverse",
     ]
-    cmd = [ffmpeg, "-y", "-loglevel", "error", "-i", src,
-           "-af", ",".join(chain), "-ac", "1", "-ar", "22050", "-acodec", "pcm_s16le", dst]
+    if abs(ratio - 1.0) > 0.004:
+        af.append("rubberband=pitch=%.5f:formant=preserved:pitchq=quality" % ratio)
+    if e.get("tone") == "edge":
+        af.append("equalizer=f=2600:t=q:w=1.0:g=1.2")
+        af.append("equalizer=f=180:t=q:w=1.0:g=-1.0")
+    elif e.get("tone") == "dull":
+        af.append("equalizer=f=3800:t=q:w=1.0:g=-2.5")
+        af.append("equalizer=f=200:t=q:w=1.0:g=1.0")
+    if e.get("gain"):
+        af.append("volume=%.1fdB" % e["gain"])
+    af += [
+        # light, slow compression keeps the loud/quiet acting instead of flattening it
+        "acompressor=threshold=-14dB:ratio=1.6:attack=15:release=200",
+        # a very short, quiet reverb gives the voice a body (a dry 22 kHz mono synth is
+        # what reads as "robotic"); mixed low so intelligibility stays intact
+        "aecho=in_gain=0.92:out_gain=0.85:delays=28|52:decays=0.16|0.09",
+        "alimiter=limit=0.95",
+    ]
+    cmd = [ffmpeg, "-y", "-loglevel", "error", "-i", src, "-af", ",".join(af),
+           "-ac", "1", "-ar", "22050", "-acodec", "pcm_s16le", dst]
     subprocess.run(cmd, check=True)
     return dst
 

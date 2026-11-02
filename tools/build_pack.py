@@ -100,22 +100,6 @@ def find_ffmpeg():
         return None
 
 
-# Game voice lines are short and hot: trim dead air, even out the level, then
-# hard-limit so the Miles mixer does not clip when it stacks several samples.
-MASTER_FILTER = (
-    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.04,"
-    "areverse,"
-    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06,"
-    "areverse,"
-    "acompressor=threshold=-18dB:ratio=2.5:attack=5:release=80,"
-    "dynaudnorm=f=200:g=5:p=0.9:m=8,"      # even out the line before the limiter
-    "alimiter=limit=0.97,"
-    "volume=1.4dB,"
-    "atempo=%(tempo)s"
-)
-DEFAULT_TEMPO = 1.12
-
-
 def convert_to_game_wav(src, dst, fmt, master=True):
     """Downmix/convert any wav to the game's expected mono PCM wav."""
     ffmpeg = find_ffmpeg()
@@ -124,7 +108,13 @@ def convert_to_game_wav(src, dst, fmt, master=True):
         cmd = [ffmpeg, "-y", "-loglevel", "error", "-i", src,
                "-ac", str(channels), "-ar", str(rate), "-acodec", "pcm_s16le"]
         if master:
-            cmd += ["-af", MASTER_FILTER % {"tempo": fmt.get("tempo", DEFAULT_TEMPO)}]
+            # single, neutral pass: trim edges + a static gain. The voice shaping
+            # (pitch lock, tone, compression) already happened in tools/tts_engine.py,
+            # and a second EQ/tempo here is what made lines sound different from each other.
+            # level match only: the voice was already shaped (pitch-locked, EQ'd,
+            # compressed) in tools/tts_engine.py. Adding EQ/tempo here gave every line
+            # a slightly different character, which read as "the voice keeps changing".
+            cmd += ["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"]
         cmd.append(dst)
         subprocess.run(cmd, check=True)
         return
@@ -247,7 +237,8 @@ def main(argv=None):
     neural = None
     if args.engine == "neural":
         from tts_engine import Voice
-        neural = Voice()
+        voice_cfg = pack.get("voice", {})
+        neural = Voice(target_hz=voice_cfg.get("pitch_hz"))
     for job in jobs:
         dst = os.path.join(render_dir, job["wav"] + ".wav")
         if args.engine == "tone":
