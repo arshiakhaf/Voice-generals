@@ -50,6 +50,20 @@ class PackCoverage(unittest.TestCase):
                         self.assertNotIn(f["line_fa"], seen, "duplicate line: %s" % f["wav"])
                         seen.add(f["line_fa"])
 
+    def test_tone_rules(self):
+        """The pack declares its own vocabulary rules; enforce them so a later
+        rewrite cannot quietly reintroduce banned family insults."""
+        for path in packs():
+            pack, _, _ = load_pack(path)
+            tone = pack.get("tone", {})
+            lines = [f["line_fa"] for u in pack["units"]
+                     for spec in u["events"].values() for f in spec["files"]]
+            text = " ".join(lines)
+            for bad in tone.get("banned_dirty", []):
+                self.assertNotIn(bad, text, "banned word %r leaked back in" % bad)
+            self.assertGreaterEqual(sum(text.count(w) for w in tone.get("allowed_dirty", [])), 40,
+                                    "pack is supposed to be explicit")
+
     def test_objects_exist(self):
         objects = json.load(open(os.path.join(ROOT, "data", "object_voices.json")))
         for path in packs():

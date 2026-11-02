@@ -98,13 +98,30 @@ def find_ffmpeg():
         return None
 
 
-def convert_to_game_wav(src, dst, fmt):
+# Game voice lines are short and hot: trim dead air, even out the level, then
+# hard-limit so the Miles mixer does not clip when it stacks several samples.
+MASTER_FILTER = (
+    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.04,"
+    "areverse,"
+    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06,"
+    "areverse,"
+    "acompressor=threshold=-18dB:ratio=2.5:attack=5:release=80,"
+    "alimiter=limit=0.89,"
+    "atempo=%(tempo)s"
+)
+DEFAULT_TEMPO = 1.12
+
+
+def convert_to_game_wav(src, dst, fmt, master=True):
     """Downmix/convert any wav to the game's expected mono PCM wav."""
     ffmpeg = find_ffmpeg()
     rate, channels, bits = fmt["sample_rate"], fmt["channels"], fmt["bits"]
     if ffmpeg:
         cmd = [ffmpeg, "-y", "-loglevel", "error", "-i", src,
-               "-ac", str(channels), "-ar", str(rate), "-acodec", "pcm_s16le", dst]
+               "-ac", str(channels), "-ar", str(rate), "-acodec", "pcm_s16le"]
+        if master:
+            cmd += ["-af", MASTER_FILTER % {"tempo": fmt.get("tempo", DEFAULT_TEMPO)}]
+        cmd.append(dst)
         subprocess.run(cmd, check=True)
         return
     # pure-python fallback: only handles PCM wav with matching rate
@@ -229,7 +246,8 @@ def main(argv=None):
             if not os.path.isfile(src):
                 print("  missing render: %s" % src)
                 continue
-            shutil.copyfile(src, dst)
+            if os.path.abspath(src) != os.path.abspath(dst):
+                shutil.copyfile(src, dst)
         job["rendered"] = dst
 
     out_dir = os.path.join(args.out, pack["pack"], "mod")

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Build a self-contained HTML page so the whole pack can be auditioned in order.
 
-Reads build/<pack>/mod/manifest.json (written by build_pack.py) and writes
-preview/<pack>.html with one audio player per vanilla wav name.
+Reads data/packs/<pack>.json (the full script) plus the rendered wavs in
+build/<pack>/mod/Data/Audio/Sounds, and writes preview/<pack>.html so every line
+of the script is visible while the already-rendered ones can be played.
 
 Usage:
     python3 tools/preview.py usa_dozer
@@ -34,22 +35,23 @@ def main(argv):
     if not argv:
         sys.exit("usage: preview.py <pack>")
     pack = argv[0]
-    base = os.path.join(BUILD, pack)
-    manifest_path = os.path.join(base, "mod", "manifest.json")
-    if not os.path.isfile(manifest_path):
-        sys.exit("missing %s - run tools/build_pack.py first" % manifest_path)
-    manifest = json.load(open(manifest_path, encoding="utf-8"))
+    pack_path = os.path.join(ROOT, "data", "packs", pack + ".json")
+    if not os.path.isfile(pack_path):
+        sys.exit("missing %s" % pack_path)
+    data = json.load(open(pack_path, encoding="utf-8"))
+    sounds = os.path.join(BUILD, pack, "mod", "Data", "Audio", "Sounds")
 
     # group by event, keeping the pack's declared order
     order, groups = [], {}
-    for row in manifest:
-        if row["event"] not in groups:
-            groups[row["event"]] = []
-            order.append(row["event"])
-        groups[row["event"]].append(row)
+    for unit in data["units"]:
+        for event, spec in unit["events"].items():
+            order.append(event)
+            groups[event] = [dict(f, event=event, label_fa=spec.get("label_fa", event))
+                             for f in spec["files"]]
 
     rows = []
     n = 0
+    rendered = 0
     for event in order:
         items = groups[event]
         rows.append('<section><h2>%s <span class="count">%d</span> '
@@ -59,11 +61,15 @@ def main(argv):
         for row in items:
             n += 1
             src = "audio/%s.wav" % row["wav"]
+            ready = os.path.isfile(os.path.join(sounds, row["wav"] + ".wav"))
+            rendered += 1 if ready else 0
             tags = " ".join('<i class="t">%s</i>' % TAG_FA.get(t, t) for t in row.get("tags", []))
+            player = ('<audio controls preload="none" src="%s"></audio>' % src if ready
+                      else '<span class="todo">صدا هنوز ساخته نشده</span>')
             rows.append(
                 '<div class="row"><div class="meta"><b>%d.</b> <code>%s</code> %s</div>'
-                '<div class="line">%s</div><audio controls preload="none" src="%s"></audio></div>'
-                % (n, html.escape(row["wav"]), tags, html.escape(row["line_fa"]), src))
+                '<div class="line">%s</div>%s</div>'
+                % (n, html.escape(row["wav"]), tags, html.escape(row["line_fa"]), player))
         rows.append("</section>")
 
     page = """<!doctype html>
@@ -82,13 +88,14 @@ h2 .count{background:#2a2d22;padding:1px 7px;border-radius:9px;color:#b7f07a;fon
 .meta{font-size:12px;color:#7e8270;font-family:monospace}
 .line{font-size:15px;line-height:1.7}
 audio{grid-row:1/3;align-self:center;height:32px}
+.todo{grid-row:1/3;align-self:center;font-size:12px;color:#6d7060;border:1px dashed #3a3d2e;border-radius:12px;padding:4px 10px}
 code{color:#d8d6c8}
 i.t{font-style:normal;font-size:11px;background:#22261a;color:#a8c98a;padding:1px 6px;border-radius:8px;margin-inline-start:5px}
 </style></head><body>
 <h1>%(title)s</h1>
-<div class="sub">%(pack)s &middot; %(n)d فایل &middot; %(events)d رویداد &middot; فرمت بازی: مونو 22050Hz</div>
+<div class="sub">%(pack)s &middot; %(n)d خط &middot; %(events)d رویداد &middot; %(rendered)d تا صدا خورده &middot; فرمت بازی: مونو 22050Hz</div>
 %(body)s
-</body></html>""" % {"pack": html.escape(pack), "n": n, "events": len(order),
+</body></html>""" % {"pack": html.escape(pack), "n": n, "events": len(order), "rendered": rendered,
                      "title": html.escape(argv[1] if len(argv) > 1 else pack),
                      "body": "\n".join(rows)}
 
@@ -99,15 +106,15 @@ i.t{font-style:normal;font-size:11px;background:#22261a;color:#a8c98a;padding:1p
     # audio lives next to the html so the page is portable
     audio_dir = os.path.join(PREVIEW, "audio")
     os.makedirs(audio_dir, exist_ok=True)
-    src_dir = os.path.join(base, "mod", "Data", "Audio", "Sounds")
+    src_dir = sounds
     copied = 0
-    for name in os.listdir(src_dir):
+    for name in os.listdir(src_dir) if os.path.isdir(src_dir) else []:
         if name.lower().endswith(".wav"):
             target = os.path.join(audio_dir, name)
             with open(os.path.join(src_dir, name), "rb") as s, open(target, "wb") as d:
                 d.write(s.read())
             copied += 1
-    print("wrote %s (%d rows, %d wav)" % (out, n, copied))
+    print("wrote %s (%d lines, %d/%d rendered)" % (out, n, rendered, n))
     return 0
 
 
