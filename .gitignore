@@ -4,6 +4,7 @@ preview/*.html
 preview/*.mp3
 !preview/dozer_highlights.mp3
 !preview/usa_dozer_player.html
+!preview/wav/
 preview/audio/
 # cached EA data (never commit the game's own files)
 .cache/

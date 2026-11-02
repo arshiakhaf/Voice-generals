@@ -74,7 +74,7 @@ function playRow(btn){
 </script></body></html>"""
 
 
-def build(pack, embed=True):
+def build(pack, embed=True, mp3=False):
     base = os.path.join(ROOT, "build", pack)
     manifest = json.load(open(os.path.join(base, "mod", "manifest.json"), encoding="utf-8"))
     sounded = os.path.join(base, "mod", "Data", "Audio", "Sounds")
@@ -101,6 +101,8 @@ def build(pack, embed=True):
                 continue
             if embed:
                 src = "data:audio/wav;base64," + base64.b64encode(open(wav, "rb").read()).decode()
+            elif mp3:
+                src = "wav/%s.mp3" % row["wav"]
             else:
                 shutil.copyfile(wav, os.path.join(out_dir, "audio", row["wav"] + ".wav"))
                 src = "audio/%s.wav" % row["wav"]
@@ -125,8 +127,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("pack")
     ap.add_argument("--no-embed", action="store_true")
+    ap.add_argument("--mp3", action="store_true", help="link preview/wav/<name>.mp3 instead of embedding")
     args = ap.parse_args(argv)
-    out, n = build(args.pack, embed=not args.no_embed)
+    out, n = build(args.pack, embed=not (args.no_embed or args.mp3), mp3=args.mp3)
     print("%s (%d lines, %.1f MB)" % (out, n, os.path.getsize(out) / 1048576))
     return 0
 
