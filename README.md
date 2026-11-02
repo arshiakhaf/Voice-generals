@@ -110,3 +110,15 @@ GeneralsZH.exe -mod "C:\path\to\usa_dozer.big"
 
 کد ابزارها: MIT. صداهای اصلی بازی مالِ EA است و در این ریپو کامیت نمی‌شوند؛
 فقط متن پک (`data/packs`) و ابزارها اینجا نگه داشته می‌شوند.
+
+## فایل‌های آماده (روی گیت‌هاب)
+
+| فایل | مسیر |
+|---|---|
+| پلیر همهٔ ۴۱ خط (صدا داخل صفحه) | [`preview/usa_dozer_player.html`](preview/usa_dozer_player.html) |
+| گلچین ۴۰ ثانیه‌ای | [`preview/dozer_highlights.mp3`](preview/dozer_highlights.mp3) |
+| متن کامل پک | [`data/packs/usa_dozer.json`](data/packs/usa_dozer.json) |
+| نسخهٔ نصبی + `.big` | بخش **Releases** → `dozer-v1` |
+
+> فایل‌های wav ساخته‌شده در `build/` کامیت نمی‌شوند (خروجی بیلد). برای ساختشان:
+> `python3 tools/tts_engine.py --setup` و بعد `python3 tools/build_pack.py data/packs/usa_dozer.json --engine neural --big`
