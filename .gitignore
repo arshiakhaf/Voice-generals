@@ -1,0 +1,8 @@
+# build output
+build/
+preview/*.html
+preview/audio/
+# cached EA data (never commit the game's own files)
+.cache/
+__pycache__/
+*.pyc
