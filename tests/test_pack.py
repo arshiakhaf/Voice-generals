@@ -89,7 +89,7 @@ class VoiceConsistency(unittest.TestCase):
     def test_rendered_pitch_is_locked(self):
         import glob
         sys.path.insert(0, os.path.join(ROOT, "tools"))
-        from pitch_stats import summary
+        from pitch_stats import pitch_mode
         base = os.path.join(ROOT, "build")
         for pack_path in packs():
             pack, _, _ = load_pack(pack_path)
@@ -97,11 +97,14 @@ class VoiceConsistency(unittest.TestCase):
             if not os.path.isdir(sounds):
                 self.skipTest("pack not rendered yet")
             target = pack.get("voice", {}).get("pitch_hz", 100.0)
+            # The register of a line is the density mode of its f0, not the median:
+            # a median drifts with the falling tail of a shouted line and let a
+            # genuinely wrong take pass an earlier version of this test.
             meds = []
             for wav in glob.glob(os.path.join(sounds, "*.wav")):
-                s = summary(wav)
-                if s:
-                    meds.append(s["median"])
+                m = pitch_mode(wav)
+                if m > 0:
+                    meds.append(m)
             self.assertGreater(len(meds), 30)
             median = sorted(meds)[len(meds) // 2]
             # the middle of the pack sits on the declared pitch...
@@ -109,7 +112,11 @@ class VoiceConsistency(unittest.TestCase):
                             "median %0.1f Hz is not the declared %0.1f Hz" % (median, target))
             # ...and no clip is more than a fifth away from it
             worst = max(abs(12 * __import__("math").log2(m / target)) for m in meds)
-            self.assertLess(worst, 7.0, "a clip drifted %.1f semitones from the unit voice" % worst)
+            self.assertLess(worst, 4.0, "a clip drifted %.1f semitones from the unit voice" % worst)
+            # and the pack is tight, not merely inside the clamp
+            q = sorted(12 * __import__("math").log2(m / target) for m in meds)
+            iqr = q[int(len(q) * 0.75)] - q[int(len(q) * 0.25)]
+            self.assertLess(iqr, 1.5, "pitch spread inside the pack is %.1f semitones" % iqr)
 
 
 class BigFormat(unittest.TestCase):

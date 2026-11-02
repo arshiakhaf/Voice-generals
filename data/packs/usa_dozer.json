@@ -1,586 +1,587 @@
 {
-  "pack": "usa_dozer",
-  "version": "0.4.0",
-  "title_fa": "بولدوزر آمریکا — پک «بیل و بودجه»",
-  "title_en": "USA Dozer - 'Blade & Budget' pack",
-  "updated": "2026-11-02",
-  "source": "generals-zh",
-  "tone": {
-    "rules_fa": [
-      "رکیک و صریح، ولی بدون فحش ناموسی (مادر/خواهر/ناموس/پدر) — طبق درخواست",
-      "هر خط باید به کار خودِ بولدوزر بچسبد: ساخت، تعمیر، مین‌روبی، له‌کردن، کندی، بی‌سلاحی، سوخت و دستمزد",
-      "شخصیت: کارگر قراردادی خسته و بدبین که از ژنرال و بودجه بدش می‌آید، عاشق بیل زدن است",
-      "ترکیب فارسی محاوره‌ای + فینگلیش، کنایهٔ سیاسی آمریکا/ایران، دست‌انداختن به تیکه‌کلام ژنرال‌ها",
-      "بدون توهین قومی، مذهبی یا جنسیتی"
-    ],
-    "allowed_dirty": [
-      "کیر",
-      "کس",
-      "کصخل",
-      "کصکش",
-      "کسشعر",
-      "گوه",
-      "خایه",
-      "خایه‌مال",
-      "چس"
-    ],
-    "banned_dirty": [
-      "مادر...",
-      "خواهر...",
-      "ناموس",
-      "دیوث",
-      "پدرسگ",
-      "حروم‌زاده",
-      "جنده"
-    ]
-  },
-  "voice": {
-    "language": "fa",
-    "gender": "masculine",
-    "use_case": "characters",
-    "notes": "One voice for the whole unit: each clip's median f0 is pulled to pitch_hz with formants preserved, so lines differ in delivery only. Emotion changes pace/air only - never pitch or formants. 92 Hz keeps the average correction under 2 semitones, which is where rubberband still sounds natural.",
-    "pitch_hz": 92.0
-  },
-  "format": {
-    "sample_rate": 22050,
-    "channels": 1,
-    "bits": 16,
-    "codec": "pcm_s16le",
-    "max_seconds": 5
-  },
-  "units": [
-    {
-      "object": "AmericaVehicleDozer",
-      "unit_fa": "بولدوزر آمریکا",
-      "faction": "usa",
-      "generals": [
-        "USA",
-        "Laser",
-        "Air Force",
-        "Super Weapon"
-      ],
-      "role_fa": "تنها سازندهٔ آمریکا؛ بدون سلاح، کند، ۲۵ تن آهن با یک بیل جلو",
-      "slots": {
-        "VoiceSelect": "DozerUSAVoiceSelect",
-        "VoiceCreate": "DozerUSAVoiceCreate",
-        "VoiceMove": "DozerUSAVoiceMove",
-        "VoiceGuard": "DozerUSAVoiceMove",
-        "VoiceEnter": "DozerUSAVoiceMove",
-        "VoiceBuildResponse": "DozerUSAVoiceBuild",
-        "VoiceNoBuild": "DozerUSAVoiceBuildNot",
-        "VoiceRepair": "DozerUSAVoiceRepair",
-        "VoiceTaskComplete": "DozerUSAVoiceBuildComplete",
-        "VoiceCrush": "DozerUSAVoiceCrush",
-        "VoiceDisarm": "DozerUSAVoiceClearMine"
-      },
-      "events": {
-        "DozerUSAVoiceSelect": {
-          "label_fa": "انتخاب شدن",
-          "files": [
-            {
-              "wav": "vdousea",
-              "line_fa": "بله قربان! کیرم تو این ارتش، من اصلاً چرا انتخاب شدم؟",
-              "tags": [
-                "explicit",
-                "general-mock"
-              ],
-              "emotion": "furious",
-              "sounds": null,
-              "tts": "بله قربان! کیرُم تو این ارتش، من اصلاً چرا انتخاب شدم؟"
-            },
-            {
-              "wav": "vdouseb",
-              "line_fa": "بولدوزر آماده‌ست کصخل. من اسلحه ندارم، فقط بیل دارم.",
-              "tags": [
-                "explicit",
-                "work"
-              ],
-              "emotion": "deadpan",
-              "sounds": null,
-              "tts": "بولدوزر آماده‌ست کُصخُل. من اسلحه ندارم، فقط بیل دارم."
-            },
-            {
-              "wav": "vdousec",
-              "line_fa": "Yes sir! کس‌شعر نگو، کار داری بگو؛ من با بیل حرف می‌زنم.",
-              "tags": [
-                "finglish",
-                "explicit"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "یس سِر! کُس‌شِعر نگو، کار داری بگو؛ من با بیل حرف می‌زَنَم."
-            },
-            {
-              "wav": "vdoused",
-              "line_fa": "از تانک خبری نیست؟ کیرم تو تجهیزات، من فقط یه بیل دارم.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "angry",
-              "sounds": null,
-              "tts": "از تانک خبری نیست؟ کیرُم تو تجهیزات، من فقط یه بیل دارم."
-            },
-            {
-              "wav": "vdousee",
-              "line_fa": "چشم قربان، ولی حقوق من رو کی می‌ده؟ خایه‌مال‌ها.",
-              "tags": [
-                "work",
-                "political"
-              ],
-              "emotion": "tired",
-              "sounds": null,
-              "tts": "چشم قربان، ولی حقوق من رو کی می‌ده؟ خایه‌مال‌ها."
-            },
-            {
-              "wav": "vdousef",
-              "line_fa": "حرف نزن ژنرال؛ بیل باید بزنه، کس‌شعر لازم نیست.",
-              "tags": [
-                "general-mock",
-                "explicit"
-              ],
-              "emotion": "angry",
-              "sounds": null,
-              "tts": "حرف نزن ژنرال؛ بیل باید بزنه، کُس‌شِعر لازم نیست."
-            },
-            {
-              "wav": "vdouseg",
-              "line_fa": "چی نگاه می‌کنی کصکش؟ من کارگرم، تو ژنرال؛ هر دو گوهیم.",
-              "tags": [
-                "explicit",
-                "general-mock"
-              ],
-              "emotion": "angry",
-              "sounds": null,
-              "tts": "چی نگاه می‌کُنی کُصکِش؟ من کارگرم، تو ژنرال؛ هر دو گوهیم."
-            },
-            {
-              "wav": "vdouseh",
-              "line_fa": "I am ready, asshole! فینگلیش هم بلدم، کیرم تو انگلیسی.",
-              "tags": [
-                "finglish",
-                "explicit"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "آی اَم رِدی، اَس‌هول! فینگلیش هم بلدم، کیرُم تو انگلیسی."
-            },
-            {
-              "wav": "vdousei",
-              "line_fa": "انتخابم کردی؟ پس کارت تمومه؛ برو گوه بخور.",
-              "tags": [
-                "explicit"
-              ],
-              "emotion": "deadpan",
-              "sounds": null,
-              "tts": "انتخابم کردی؟ پس کارت تمومه؛ برو گوه بخور."
-            }
-          ]
-        },
-        "DozerUSAVoiceCreate": {
-          "label_fa": "از کارخانه بیرون آمدن",
-          "files": [
-            {
-              "wav": "vdousej",
-              "line_fa": "تازه از خط تولید اومدم بیرون؛ رنگم خشک نشده، کیرم تو این شغل.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "tired",
-              "sounds": null,
-              "tts": "تازه از خط تولید اومدم بیرون؛ رنگم خشک نشده، کیرُم تو این شغل."
-            }
-          ]
-        },
-        "DozerUSAVoiceMove": {
-          "label_fa": "حرکت کردن",
-          "files": [
-            {
-              "wav": "vdoumoa",
-              "line_fa": "دارم می‌رم، کیرم تو این سرعت؛ بیست کیلومتر در ساعت کصکش.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "tired",
-              "sounds": null,
-              "tts": "دارم می‌رَم، کیرُم تو این سرعت؛ بیست کیلومتر در ساعت کُصکِش."
-            },
-            {
-              "wav": "vdoumob",
-              "line_fa": "برو کنار کصخل! بولدوزر داره میاد، چیزی نمونده.",
-              "tags": [
-                "explicit"
-              ],
-              "emotion": "scream",
-              "sounds": null,
-              "tts": "برو کنار کُصخُل! بولدوزر داره میاد، چیزی نمونده."
-            },
-            {
-              "wav": "vdoumoc",
-              "line_fa": "In position... نه، شوخی کردم؛ اینجا پر از گوه و مینه.",
-              "tags": [
-                "finglish",
-                "explicit"
-              ],
-              "emotion": "deadpan",
-              "sounds": null,
-              "tts": "این پوزیشن... نه، شوخی کردم؛ اینجا پر از گوه و مینه."
-            },
-            {
-              "wav": "vdoumoe",
-              "line_fa": "دوغ دوغ... نه بابا، روغن موتوره؛ کیرم تو این ماشین.",
-              "tags": [
-                "work",
-                "joke"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "دوغ دوغ... نه بابا، روغن موتوره؛ کیرُم تو این ماشین."
-            },
-            {
-              "wav": "vdoumof",
-              "line_fa": "راه می‌افتم، ولی بنزین و روغن و دستمزد با توئه کصخل.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "tired",
-              "sounds": null,
-              "tts": "راه می‌اُفتم، ولی بنزین و روغن و دستمزد با توئه کُصخُل."
-            },
-            {
-              "wav": "vdoumog",
-              "line_fa": "نقشه رو من نمی‌کشم کصخل؛ این جاده هم کج و گوهه.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "angry",
-              "sounds": null,
-              "tts": "نقشه رو من نمی‌کشم کُصخُل؛ این جاده هم کج و گوهه."
-            }
-          ]
-        },
-        "DozerUSAVoiceCrush": {
-          "label_fa": "له کردن پیاده‌نظام",
-          "files": [
-            {
-              "wav": "vdoucra",
-              "line_fa": "یکی زیر بیل له شد؛ استخونش صدا داد، کیرم تو این جنگ.",
-              "tags": [
-                "dark",
-                "explicit"
-              ],
-              "emotion": "deadpan",
-              "sounds": null,
-              "tts": "یکی زیر بیل له شد؛ استخونش صدا داد، کیرُم تو این جنگ."
-            },
-            {
-              "wav": "vdoucrb",
-              "line_fa": "اسلحه ندارم، ولی بیست تن آهن دارم؛ کیرم تو پیاده‌نظام.",
-              "tags": [
-                "dark",
-                "work"
-              ],
-              "emotion": "furious",
-              "sounds": null,
-              "tts": "اسلحه ندارم، ولی بیست تن آهن دارم؛ کیرُم تو پیاده‌نظام."
-            },
-            {
-              "wav": "vdoucrc",
-              "line_fa": "این صدای خرد شدن استخون بود یا یکی گوه خورد؟",
-              "tags": [
-                "dark",
-                "explicit"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "این صدای خرد شدن استخون بود یا یکی گوه خورد؟"
-            }
-          ]
-        },
-        "DozerUSAVoiceBuild": {
-          "label_fa": "شروع ساخت",
-          "files": [
-            {
-              "wav": "vdoubua",
-              "line_fa": "می‌سازم، ولی کیفیتش گوهه؛ پای خودت کصخل.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "tired",
-              "sounds": null,
-              "tts": "می‌سازَم، ولی کیفیتش گوهه؛ پای خودت کُصخُل."
-            },
-            {
-              "wav": "vdoubub",
-              "line_fa": "بنا می‌شه کصکش! کلنگ بده، کیرم تو بودجه.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "angry",
-              "sounds": null,
-              "tts": "بنا می‌شِه کُصکِش! کلنگ بده، کیرُم تو بودجه."
-            },
-            {
-              "wav": "vdoubuc",
-              "line_fa": "برج می‌سازم؛ قیمتش؟ یه کیر تو پنتاگون.",
-              "tags": [
-                "political",
-                "explicit"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "برج می‌سازَم؛ قیمتش؟ یه کیر تو پنتاگون."
-            },
-            {
-              "wav": "vdoubud",
-              "line_fa": "دیوار می‌سازم، ولی پولش با مکزیکه کصکش!",
-              "tags": [
-                "political",
-                "explicit"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "دیوار می‌سازَم، ولی پولش با مکزیکه کُصکِش!"
-            },
-            {
-              "wav": "vdoubue",
-              "line_fa": "قسطی هم می‌شه، ولی سودش رو خایه‌مال‌ها می‌خورن.",
-              "tags": [
-                "political",
-                "explicit"
-              ],
-              "emotion": "angry",
-              "sounds": null,
-              "tts": "قسطی هم می‌شِه، ولی سودش رو خایه‌مال‌ها می‌خُرُن."
-            }
-          ]
-        },
-        "DozerUSAVoiceBuildNot": {
-          "label_fa": "نمی‌تونه بسازه",
-          "files": [
-            {
-              "wav": "vdounoa",
-              "line_fa": "پول نداری کصخل! دولت shutdown کرده؛ برو گوه بخور.",
-              "tags": [
-                "political",
-                "explicit"
-              ],
-              "emotion": "scream",
-              "sounds": null,
-              "tts": "پول نداری کُصخُل! دولت تعطیل کرده؛ برو گوه بخور."
-            },
-            {
-              "wav": "vdounob",
-              "line_fa": "ناکرده پشیمون شدم؛ حالا نمی‌سازم، کیرم تو این قرارداد.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "angry",
-              "sounds": null,
-              "tts": "ناکرده پشیمون شدم؛ حالا نمی‌سازَم، کیرُم تو این قرارداد."
-            },
-            {
-              "wav": "vdounoc",
-              "line_fa": "No money, no building, کیرم تو بودجه!",
-              "tags": [
-                "finglish",
-                "explicit"
-              ],
-              "emotion": "panic",
-              "sounds": null,
-              "tts": "نو مانی، نو بیلدینگ، کیرُم تو بودجه!"
-            },
-            {
-              "wav": "vdounod",
-              "line_fa": "اینجا نمی‌شه ساخت؛ اول برو رأی بده کصخل.",
-              "tags": [
-                "political",
-                "explicit"
-              ],
-              "emotion": "deadpan",
-              "sounds": null,
-              "tts": "اینجا نمی‌شِه ساخت؛ اول برو رأی بده کُصخُل."
-            }
-          ]
-        },
-        "DozerUSAVoiceRepair": {
-          "label_fa": "تعمیر کردن",
-          "files": [
-            {
-              "wav": "vdourea",
-              "line_fa": "تعمیرش می‌کنم، ولی ضمانت نداره؛ کیرم تو این کیفیت.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "tired",
-              "sounds": null,
-              "tts": "تعمیرش می‌کُنَم، ولی ضمانت نداره؛ کیرُم تو این کیفیت."
-            },
-            {
-              "wav": "vdoureb",
-              "line_fa": "با آچار می‌زنم بهش؛ یا درست می‌شه یا گوه.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "deadpan",
-              "sounds": null,
-              "tts": "با آچار می‌زَنَم بهش؛ یا درست می‌شِه یا گوه."
-            },
-            {
-              "wav": "vdourec",
-              "line_fa": "تعمیر شد، ولی سیستم ملی نه؛ اون کلاً کس‌شعره.",
-              "tags": [
-                "political",
-                "explicit"
-              ],
-              "emotion": "angry",
-              "sounds": null,
-              "tts": "تعمیر شد، ولی سیستم ملی نه؛ اون کلاً کُس‌شِعره."
-            },
-            {
-              "wav": "vdoured",
-              "line_fa": "یه چکش لازمه و یه وجدان؛ دومی رو نداری کصخل.",
-              "tags": [
-                "joke",
-                "explicit"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "یه چکش لازمه و یه وجدان؛ دومی رو نداری کُصخُل."
-            },
-            {
-              "wav": "vdouree",
-              "line_fa": "Repaired! حالا برو بجنگ کصکش؛ من برم استراحت.",
-              "tags": [
-                "finglish",
-                "explicit"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "رِپِرِد! حالا برو بجنگ کُصکِش؛ من برم استراحت."
-            }
-          ]
-        },
-        "DozerUSAVoiceBuildComplete": {
-          "label_fa": "ساخت تمام شد",
-          "files": [
-            {
-              "wav": "vdoucoa",
-              "line_fa": "تمام شد کصکش! کیرم تو این شیفت کاری.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "scream",
-              "sounds": null,
-              "tts": "تمام شد کُصکِش! کیرُم تو این شیفت کاری."
-            },
-            {
-              "wav": "vdoucob",
-              "line_fa": "Construction complete؛ بازم می‌گم، چون گوشت گوهه.",
-              "tags": [
-                "finglish",
-                "explicit"
-              ],
-              "emotion": "deadpan",
-              "sounds": null,
-              "tts": "کانستراکشن کامپلیت؛ بازم می‌گَم، چون گوشت گوهه."
-            },
-            {
-              "wav": "vdoucoc",
-              "line_fa": "آمد؛ حالا برو با افتخار بمیر، کیرم تو افتخار.",
-              "tags": [
-                "general-mock",
-                "explicit"
-              ],
-              "emotion": "scream",
-              "sounds": null,
-              "tts": "آمد؛ حالا برو با افتخار بمیر، کیرُم تو افتخار."
-            }
-          ]
-        },
-        "DozerUSAVoiceClearMine": {
-          "label_fa": "مین‌روبی",
-          "files": [
-            {
-              "wav": "vdoucla",
-              "line_fa": "مین‌ها رو جارو می‌کنم؛ مثل سانسور، یکی یکی.",
-              "tags": [
-                "political",
-                "work"
-              ],
-              "emotion": "deadpan",
-              "sounds": null,
-              "tts": "مین‌ها رو جارو می‌کُنَم؛ مثل سانسور، یکی یکی."
-            },
-            {
-              "wav": "vdouclb",
-              "line_fa": "خم شو کصخل! یکی دیگه پیدا کردم، کیرم تو این زمین.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "panic",
-              "sounds": null,
-              "tts": "خم شو کُصخُل! یکی دیگه پیدا کردم، کیرُم تو این زمین."
-            },
-            {
-              "wav": "vdouclc",
-              "line_fa": "پاکسازی شد؛ پاک‌تر از پروندهٔ قراردادهای پنتاگون.",
-              "tags": [
-                "political",
-                "joke"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "پاکسازی شد؛ پاک‌تر از پروندهٔ قراردادهای پنتاگون."
-            },
-            {
-              "wav": "vdoucld",
-              "line_fa": "چک چک... مین نبود، یه گوه بود؛ کیرم تو این شغل.",
-              "tags": [
-                "work",
-                "explicit"
-              ],
-              "emotion": "smug",
-              "sounds": null,
-              "tts": "چک چک... مین نبود، یه گوه بود؛ کیرُم تو این شغل."
-            },
-            {
-              "wav": "vdoucle",
-              "line_fa": "مین پاک شد؛ حالا برجک کصافت رو هم بشور.",
-              "tags": [
-                "explicit"
-              ],
-              "emotion": "angry",
-              "sounds": null,
-              "tts": "مین پاک شد؛ حالا برجک کصافت رو هم بشور."
-            }
-          ]
-        }
-      },
-      "commented_out": [
-        {
-          "wav": "vdoumod",
-          "event": "DozerUSAVoiceMove",
-          "line_fa": "این جاده رو کی ساخته؟ از سیاست ما هم کج‌تره.",
-          "why": "vanilla Voice.ini has this file commented out, so the game never plays it"
-        }
-      ]
-    }
+ "pack": "usa_dozer",
+ "version": "0.5.0",
+ "title_fa": "بولدوزر آمریکا — پک «بیل و بودجه»",
+ "title_en": "USA Dozer - 'Blade & Budget' pack",
+ "updated": "2026-11-02",
+ "source": "generals-zh",
+ "tone": {
+  "rules_fa": [
+   "رکیک و صریح، ولی بدون فحش ناموسی (مادر/خواهر/ناموس/پدر) — طبق درخواست",
+   "هر خط باید به کار خودِ بولدوزر بچسبد: ساخت، تعمیر، مین‌روبی، له‌کردن، کندی، بی‌سلاحی، سوخت و دستمزد",
+   "شخصیت: کارگر قراردادی خسته و بدبین که از ژنرال و بودجه بدش می‌آید، عاشق بیل زدن است",
+   "ترکیب فارسی محاوره‌ای + فینگلیش، کنایهٔ سیاسی آمریکا/ایران، دست‌انداختن به تیکه‌کلام ژنرال‌ها",
+   "بدون توهین قومی، مذهبی یا جنسیتی"
   ],
-  "engine": {
-    "tts": "piper-vits-fa (espeak-ng fa frontend)",
-    "emotion_layer": "rubberband pitch/formant + drive/compressor",
-    "sample_rate": 22050
+  "allowed_dirty": [
+   "کیر",
+   "کس",
+   "کصخل",
+   "کصکش",
+   "کسشعر",
+   "گوه",
+   "خایه",
+   "خایه‌مال",
+   "چس"
+  ],
+  "banned_dirty": [
+   "مادر...",
+   "خواهر...",
+   "ناموس",
+   "دیوث",
+   "پدرسگ",
+   "حروم‌زاده",
+   "جنده"
+  ]
+ },
+ "voice": {
+  "language": "fa",
+  "gender": "masculine",
+  "use_case": "characters",
+  "notes": "One voice for the whole unit. Each clause is rendered as several natural takes and the most stable take already closest to pitch_hz is kept; takes that change register mid-clause are rejected. Any residual is pitch-shifted with formants preserved, and the assembled line is verified and corrected again. Emotion changes pace and tone only - never pitch or formants.",
+  "pitch_hz": 92.0,
+  "notes_fa": "یک یونیت = یک صدا. هر جمله چند تیک طبیعی رندر می‌شه و همونی انتخاب می‌شه که خودش روی ۹۲ هرتز باشه؛ شیفت پیچ فقط باقی‌ماندهٔ کوچیک رو درست می‌کنه و کل خط دوباره چک و تصحیح می‌شه. تیک‌هایی که وسط خودشون رجیستر عوض می‌کنن کنار گذاشته می‌شن."
+ },
+ "format": {
+  "sample_rate": 22050,
+  "channels": 1,
+  "bits": 16,
+  "codec": "pcm_s16le",
+  "max_seconds": 5
+ },
+ "units": [
+  {
+   "object": "AmericaVehicleDozer",
+   "unit_fa": "بولدوزر آمریکا",
+   "faction": "usa",
+   "generals": [
+    "USA",
+    "Laser",
+    "Air Force",
+    "Super Weapon"
+   ],
+   "role_fa": "تنها سازندهٔ آمریکا؛ بدون سلاح، کند، ۲۵ تن آهن با یک بیل جلو",
+   "slots": {
+    "VoiceSelect": "DozerUSAVoiceSelect",
+    "VoiceCreate": "DozerUSAVoiceCreate",
+    "VoiceMove": "DozerUSAVoiceMove",
+    "VoiceGuard": "DozerUSAVoiceMove",
+    "VoiceEnter": "DozerUSAVoiceMove",
+    "VoiceBuildResponse": "DozerUSAVoiceBuild",
+    "VoiceNoBuild": "DozerUSAVoiceBuildNot",
+    "VoiceRepair": "DozerUSAVoiceRepair",
+    "VoiceTaskComplete": "DozerUSAVoiceBuildComplete",
+    "VoiceCrush": "DozerUSAVoiceCrush",
+    "VoiceDisarm": "DozerUSAVoiceClearMine"
+   },
+   "events": {
+    "DozerUSAVoiceSelect": {
+     "label_fa": "انتخاب شدن",
+     "files": [
+      {
+       "wav": "vdousea",
+       "line_fa": "بله قربان! کیرم تو این ارتش، من اصلاً چرا انتخاب شدم؟",
+       "tags": [
+        "explicit",
+        "general-mock"
+       ],
+       "emotion": "furious",
+       "sounds": null,
+       "tts": "بله قربان! کیرُم تو این ارتش، من اصلاً چرا انتخاب شدم؟"
+      },
+      {
+       "wav": "vdouseb",
+       "line_fa": "بولدوزر آماده‌ست کصخل. من اسلحه ندارم، فقط بیل دارم.",
+       "tags": [
+        "explicit",
+        "work"
+       ],
+       "emotion": "deadpan",
+       "sounds": null,
+       "tts": "بولدوزر آماده‌ست کُصخُل. من اسلحه ندارم، فقط بیل دارم."
+      },
+      {
+       "wav": "vdousec",
+       "line_fa": "Yes sir! کس‌شعر نگو، کار داری بگو؛ من با بیل حرف می‌زنم.",
+       "tags": [
+        "finglish",
+        "explicit"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "یس سِر! کُس‌شِعر نگو، کار داری بگو؛ من با بیل حرف می‌زَنَم."
+      },
+      {
+       "wav": "vdoused",
+       "line_fa": "از تانک خبری نیست؟ کیرم تو تجهیزات، من فقط یه بیل دارم.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "angry",
+       "sounds": null,
+       "tts": "از تانک خبری نیست؟ کیرُم تو تجهیزات، من فقط یه بیل دارم."
+      },
+      {
+       "wav": "vdousee",
+       "line_fa": "چشم قربان، ولی حقوق من رو کی می‌ده؟ خایه‌مال‌ها.",
+       "tags": [
+        "work",
+        "political"
+       ],
+       "emotion": "tired",
+       "sounds": null,
+       "tts": "چشم قربان، ولی حقوق من رو کی می‌ده؟ خایه‌مال‌ها."
+      },
+      {
+       "wav": "vdousef",
+       "line_fa": "حرف نزن ژنرال؛ بیل باید بزنه، کس‌شعر لازم نیست.",
+       "tags": [
+        "general-mock",
+        "explicit"
+       ],
+       "emotion": "angry",
+       "sounds": null,
+       "tts": "حرف نزن ژنرال؛ بیل باید بزنه، کُس‌شِعر لازم نیست."
+      },
+      {
+       "wav": "vdouseg",
+       "line_fa": "چی نگاه می‌کنی کصکش؟ من کارگرم، تو ژنرال؛ هر دو گوهیم.",
+       "tags": [
+        "explicit",
+        "general-mock"
+       ],
+       "emotion": "angry",
+       "sounds": null,
+       "tts": "چی نگاه می‌کُنی کُصکِش؟ من کارگرم، تو ژنرال؛ هر دو گوهیم."
+      },
+      {
+       "wav": "vdouseh",
+       "line_fa": "I am ready, asshole! فینگلیش هم بلدم، کیرم تو انگلیسی.",
+       "tags": [
+        "finglish",
+        "explicit"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "آی اَم رِدی، اَس‌هول! فینگلیش هم بلدم، کیرُم تو انگلیسی."
+      },
+      {
+       "wav": "vdousei",
+       "line_fa": "انتخابم کردی؟ پس کارت تمومه؛ برو گوه بخور.",
+       "tags": [
+        "explicit"
+       ],
+       "emotion": "deadpan",
+       "sounds": null,
+       "tts": "انتخابم کردی؟ پس کارت تمومه؛ برو گوه بخور."
+      }
+     ]
+    },
+    "DozerUSAVoiceCreate": {
+     "label_fa": "از کارخانه بیرون آمدن",
+     "files": [
+      {
+       "wav": "vdousej",
+       "line_fa": "تازه از خط تولید اومدم بیرون؛ رنگم خشک نشده، کیرم تو این شغل.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "tired",
+       "sounds": null,
+       "tts": "تازه از خط تولید اومدم بیرون؛ رنگم خشک نشده، کیرُم تو این شغل."
+      }
+     ]
+    },
+    "DozerUSAVoiceMove": {
+     "label_fa": "حرکت کردن",
+     "files": [
+      {
+       "wav": "vdoumoa",
+       "line_fa": "دارم می‌رم، کیرم تو این سرعت؛ بیست کیلومتر در ساعت کصکش.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "tired",
+       "sounds": null,
+       "tts": "دارم می‌رَم، کیرُم تو این سرعت؛ بیست کیلومتر در ساعت کُصکِش."
+      },
+      {
+       "wav": "vdoumob",
+       "line_fa": "برو کنار کصخل! بولدوزر داره میاد، چیزی نمونده.",
+       "tags": [
+        "explicit"
+       ],
+       "emotion": "scream",
+       "sounds": null,
+       "tts": "برو کنار کُصخُل! بولدوزر داره میاد، چیزی نمونده."
+      },
+      {
+       "wav": "vdoumoc",
+       "line_fa": "In position... نه، شوخی کردم؛ اینجا پر از گوه و مینه.",
+       "tags": [
+        "finglish",
+        "explicit"
+       ],
+       "emotion": "deadpan",
+       "sounds": null,
+       "tts": "این پوزیشن... نه، شوخی کردم؛ اینجا پر از گوه و مینه."
+      },
+      {
+       "wav": "vdoumoe",
+       "line_fa": "دوغ دوغ... نه بابا، روغن موتوره؛ کیرم تو این ماشین.",
+       "tags": [
+        "work",
+        "joke"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "دوغ دوغ... نه بابا، روغن موتوره؛ کیرُم تو این ماشین."
+      },
+      {
+       "wav": "vdoumof",
+       "line_fa": "راه می‌افتم، ولی بنزین و روغن و دستمزد با توئه کصخل.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "tired",
+       "sounds": null,
+       "tts": "راه می‌اُفتم، ولی بنزین و روغن و دستمزد با توئه کُصخُل."
+      },
+      {
+       "wav": "vdoumog",
+       "line_fa": "نقشه رو من نمی‌کشم کصخل؛ این جاده هم کج و گوهه.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "angry",
+       "sounds": null,
+       "tts": "نقشه رو من نمی‌کشم کُصخُل؛ این جاده هم کج و گوهه."
+      }
+     ]
+    },
+    "DozerUSAVoiceCrush": {
+     "label_fa": "له کردن پیاده‌نظام",
+     "files": [
+      {
+       "wav": "vdoucra",
+       "line_fa": "یکی زیر بیل له شد؛ استخونش صدا داد، کیرم تو این جنگ.",
+       "tags": [
+        "dark",
+        "explicit"
+       ],
+       "emotion": "deadpan",
+       "sounds": null,
+       "tts": "یکی زیر بیل له شد؛ استخونش صدا داد، کیرُم تو این جنگ."
+      },
+      {
+       "wav": "vdoucrb",
+       "line_fa": "اسلحه ندارم، ولی بیست تن آهن دارم؛ کیرم تو پیاده‌نظام.",
+       "tags": [
+        "dark",
+        "work"
+       ],
+       "emotion": "furious",
+       "sounds": null,
+       "tts": "اسلحه ندارم، ولی بیست تن آهن دارم؛ کیرُم تو پیاده‌نظام."
+      },
+      {
+       "wav": "vdoucrc",
+       "line_fa": "این صدای خرد شدن استخون بود یا یکی گوه خورد؟",
+       "tags": [
+        "dark",
+        "explicit"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "این صدای خرد شدن استخون بود یا یکی گوه خورد؟"
+      }
+     ]
+    },
+    "DozerUSAVoiceBuild": {
+     "label_fa": "شروع ساخت",
+     "files": [
+      {
+       "wav": "vdoubua",
+       "line_fa": "می‌سازم، ولی کیفیتش گوهه؛ پای خودت کصخل.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "tired",
+       "sounds": null,
+       "tts": "می‌سازَم، ولی کیفیتش گوهه؛ پای خودت کُصخُل."
+      },
+      {
+       "wav": "vdoubub",
+       "line_fa": "بنا می‌شه کصکش! کلنگ بده، کیرم تو بودجه.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "angry",
+       "sounds": null,
+       "tts": "بنا می‌شِه کُصکِش! کلنگ بده، کیرُم تو بودجه."
+      },
+      {
+       "wav": "vdoubuc",
+       "line_fa": "برج می‌سازم؛ قیمتش؟ یه کیر تو پنتاگون.",
+       "tags": [
+        "political",
+        "explicit"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "برج می‌سازَم؛ قیمتش؟ یه کیر تو پنتاگون."
+      },
+      {
+       "wav": "vdoubud",
+       "line_fa": "دیوار می‌سازم، ولی پولش با مکزیکه کصکش!",
+       "tags": [
+        "political",
+        "explicit"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "دیوار می‌سازَم، ولی پولش با مکزیکه کُصکِش!"
+      },
+      {
+       "wav": "vdoubue",
+       "line_fa": "قسطی هم می‌شه، ولی سودش رو خایه‌مال‌ها می‌خورن.",
+       "tags": [
+        "political",
+        "explicit"
+       ],
+       "emotion": "angry",
+       "sounds": null,
+       "tts": "قسطی هم می‌شِه، ولی سودش رو خایه‌مال‌ها می‌خُرُن."
+      }
+     ]
+    },
+    "DozerUSAVoiceBuildNot": {
+     "label_fa": "نمی‌تونه بسازه",
+     "files": [
+      {
+       "wav": "vdounoa",
+       "line_fa": "پول نداری کصخل! دولت shutdown کرده؛ برو گوه بخور.",
+       "tags": [
+        "political",
+        "explicit"
+       ],
+       "emotion": "scream",
+       "sounds": null,
+       "tts": "پول نداری کُصخُل! دولت تعطیل کرده؛ برو گوه بخور."
+      },
+      {
+       "wav": "vdounob",
+       "line_fa": "ناکرده پشیمون شدم؛ حالا نمی‌سازم، کیرم تو این قرارداد.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "angry",
+       "sounds": null,
+       "tts": "ناکرده پشیمون شدم؛ حالا نمی‌سازَم، کیرُم تو این قرارداد."
+      },
+      {
+       "wav": "vdounoc",
+       "line_fa": "No money, no building, کیرم تو بودجه!",
+       "tags": [
+        "finglish",
+        "explicit"
+       ],
+       "emotion": "panic",
+       "sounds": null,
+       "tts": "نو مانی، نو بیلدینگ، کیرُم تو بودجه!"
+      },
+      {
+       "wav": "vdounod",
+       "line_fa": "اینجا نمی‌شه ساخت؛ اول برو رأی بده کصخل.",
+       "tags": [
+        "political",
+        "explicit"
+       ],
+       "emotion": "deadpan",
+       "sounds": null,
+       "tts": "اینجا نمی‌شِه ساخت؛ اول برو رأی بده کُصخُل."
+      }
+     ]
+    },
+    "DozerUSAVoiceRepair": {
+     "label_fa": "تعمیر کردن",
+     "files": [
+      {
+       "wav": "vdourea",
+       "line_fa": "تعمیرش می‌کنم، ولی ضمانت نداره؛ کیرم تو این کیفیت.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "tired",
+       "sounds": null,
+       "tts": "تعمیرش می‌کُنَم، ولی ضمانت نداره؛ کیرُم تو این کیفیت."
+      },
+      {
+       "wav": "vdoureb",
+       "line_fa": "با آچار می‌زنم بهش؛ یا درست می‌شه یا گوه.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "deadpan",
+       "sounds": null,
+       "tts": "با آچار می‌زَنَم بهش؛ یا درست می‌شِه یا گوه."
+      },
+      {
+       "wav": "vdourec",
+       "line_fa": "تعمیر شد، ولی سیستم ملی نه؛ اون کلاً کس‌شعره.",
+       "tags": [
+        "political",
+        "explicit"
+       ],
+       "emotion": "angry",
+       "sounds": null,
+       "tts": "تعمیر شد، ولی سیستم ملی نه؛ اون کلاً کُس‌شِعره."
+      },
+      {
+       "wav": "vdoured",
+       "line_fa": "یه چکش لازمه و یه وجدان؛ دومی رو نداری کصخل.",
+       "tags": [
+        "joke",
+        "explicit"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "یه چکش لازمه و یه وجدان؛ دومی رو نداری کُصخُل."
+      },
+      {
+       "wav": "vdouree",
+       "line_fa": "Repaired! حالا برو بجنگ کصکش؛ من برم استراحت.",
+       "tags": [
+        "finglish",
+        "explicit"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "رِپِرِد! حالا برو بجنگ کُصکِش؛ من برم استراحت."
+      }
+     ]
+    },
+    "DozerUSAVoiceBuildComplete": {
+     "label_fa": "ساخت تمام شد",
+     "files": [
+      {
+       "wav": "vdoucoa",
+       "line_fa": "تمام شد کصکش! کیرم تو این شیفت کاری.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "scream",
+       "sounds": null,
+       "tts": "تمام شد کُصکِش! کیرُم تو این شیفت کاری."
+      },
+      {
+       "wav": "vdoucob",
+       "line_fa": "Construction complete؛ بازم می‌گم، چون گوشت گوهه.",
+       "tags": [
+        "finglish",
+        "explicit"
+       ],
+       "emotion": "deadpan",
+       "sounds": null,
+       "tts": "کانستراکشن کامپلیت؛ بازم می‌گَم، چون گوشت گوهه."
+      },
+      {
+       "wav": "vdoucoc",
+       "line_fa": "آمد؛ حالا برو با افتخار بمیر، کیرم تو افتخار.",
+       "tags": [
+        "general-mock",
+        "explicit"
+       ],
+       "emotion": "scream",
+       "sounds": null,
+       "tts": "آمد؛ حالا برو با افتخار بمیر، کیرُم تو افتخار."
+      }
+     ]
+    },
+    "DozerUSAVoiceClearMine": {
+     "label_fa": "مین‌روبی",
+     "files": [
+      {
+       "wav": "vdoucla",
+       "line_fa": "مین‌ها رو جارو می‌کنم؛ مثل سانسور، یکی یکی.",
+       "tags": [
+        "political",
+        "work"
+       ],
+       "emotion": "deadpan",
+       "sounds": null,
+       "tts": "مین‌ها رو جارو می‌کُنَم؛ مثل سانسور، یکی یکی."
+      },
+      {
+       "wav": "vdouclb",
+       "line_fa": "خم شو کصخل! یکی دیگه پیدا کردم، کیرم تو این زمین.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "panic",
+       "sounds": null,
+       "tts": "خم شو کُصخُل! یکی دیگه پیدا کردم، کیرُم تو این زمین."
+      },
+      {
+       "wav": "vdouclc",
+       "line_fa": "پاکسازی شد؛ پاک‌تر از پروندهٔ قراردادهای پنتاگون.",
+       "tags": [
+        "political",
+        "joke"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "پاکسازی شد؛ پاک‌تر از پروندهٔ قراردادهای پنتاگون."
+      },
+      {
+       "wav": "vdoucld",
+       "line_fa": "چک چک... مین نبود، یه گوه بود؛ کیرم تو این شغل.",
+       "tags": [
+        "work",
+        "explicit"
+       ],
+       "emotion": "smug",
+       "sounds": null,
+       "tts": "چک چک... مین نبود، یه گوه بود؛ کیرُم تو این شغل."
+      },
+      {
+       "wav": "vdoucle",
+       "line_fa": "مین پاک شد؛ حالا برجک کصافت رو هم بشور.",
+       "tags": [
+        "explicit"
+       ],
+       "emotion": "angry",
+       "sounds": null,
+       "tts": "مین پاک شد؛ حالا برجک کصافت رو هم بشور."
+      }
+     ]
+    }
+   },
+   "commented_out": [
+    {
+     "wav": "vdoumod",
+     "event": "DozerUSAVoiceMove",
+     "line_fa": "این جاده رو کی ساخته؟ از سیاست ما هم کج‌تره.",
+     "why": "vanilla Voice.ini has this file commented out, so the game never plays it"
+    }
+   ]
   }
+ ],
+ "engine": {
+  "tts": "piper-vits-fa (espeak-ng fa frontend)",
+  "emotion_layer": "rubberband pitch/formant + drive/compressor",
+  "sample_rate": 22050
+ }
 }

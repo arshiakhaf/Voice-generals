@@ -64,6 +64,69 @@ def f0_track(path, fmin=55.0, fmax=420.0, frame=0.045, hop=0.015, voicing=0.35):
     return np.array(out, dtype=np.float32)
 
 
+def praat_f0(path, fmin=55.0, fmax=350.0):
+    """Praat autocorrelation f0 - far fewer octave errors than the plain tracker.
+
+    Falls back to f0_track() when parselmouth is not installed.
+    """
+    try:
+        import parselmouth
+    except Exception:
+        return f0_track(path, fmin=fmin, fmax=fmax)
+    sound = parselmouth.Sound(path)
+    pitch = sound.to_pitch_ac(time_step=0.01, pitch_floor=fmin, pitch_ceiling=fmax,
+                              octave_jump_cost=2.0)
+    f = pitch.selected_array["frequency"]
+    return np.asarray(f[f > 0], dtype=np.float32)
+
+
+def pitch_mode(path, fmin=55.0, fmax=350.0, bw=0.06):
+    """The register of a line: peak of a log-domain density of its f0 frames.
+
+    A median drifts with long falling tails at the end of a sentence, which made
+    an earlier version pitch-shift lines that were already in the right place.
+    The mode is what a listener hears as "the pitch of that voice".
+    """
+    f = praat_f0(path, fmin, fmax)
+    if len(f) < 8:
+        return 0.0
+    l = np.log2(f)
+    grid = np.linspace(l.min(), l.max(), 200)
+    dens = np.exp(-0.5 * ((grid[:, None] - l[None, :]) / bw) ** 2).sum(axis=1)
+    return float(2.0 ** grid[dens.argmax()])
+
+
+def register(path, fmin=55.0, fmax=350.0, bw=0.06):
+    """Register of a clip plus how much it drifts inside itself.
+
+    Returns dict(mode, drift, n).  `drift` is the distance in semitones between the
+    median of the first and the second half of the voiced frames: a take that drifts
+    by more than a couple of semitones is the model sliding into its other register
+    mid-line, which is exactly what made one line sound like two voices.
+    """
+    try:
+        import parselmouth
+    except Exception:
+        return dict(mode=0.0, drift=0.0, n=0)
+    try:
+        pitch = parselmouth.Sound(path).to_pitch_ac(
+            time_step=0.01, pitch_floor=fmin, pitch_ceiling=fmax, octave_jump_cost=2.0)
+        f = pitch.selected_array["frequency"]
+        f = np.asarray(f[f > 0], dtype=np.float32)
+    except Exception:
+        return dict(mode=0.0, drift=0.0, n=0)
+    if len(f) < 8:
+        return dict(mode=0.0, drift=0.0, n=int(len(f)))
+    l = np.log2(f)
+    grid = np.linspace(l.min(), l.max(), 200)
+    dens = np.exp(-0.5 * ((grid[:, None] - l[None, :]) / bw) ** 2).sum(axis=1)
+    mode = float(2.0 ** grid[dens.argmax()])
+    half = len(f) // 2
+    a, b = float(np.median(f[:half])), float(np.median(f[half:]))
+    drift = abs(12.0 * np.log2(b / a)) if a > 0 and b > 0 else 0.0
+    return dict(mode=mode, drift=float(drift), n=int(len(f)))
+
+
 def summary(path):
     f = f0_track(path)
     if len(f) < 5:

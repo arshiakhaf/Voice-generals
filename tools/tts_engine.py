@@ -21,6 +21,7 @@ CLI:
 
 import argparse
 import json
+import numpy as np
 import os
 import math
 import re
@@ -44,21 +45,34 @@ SOURCE_REPO = "gyroing/Persian-Piper-TTS-WebAssembly"
 # A unit keeps ONE voice. Emotion only changes how the line is delivered (pace,
 # expressiveness, air), never the pitch or the formants - those are locked per clip to
 # VOICE_PITCH_HZ below, otherwise every line sounds like a different person.
+# VITS exposes two knobs that add randomness: noise_scale (timbre/pitch wobble per run)
+# and noise_w_scale (timing jitter). Both are pinned to 0 so the same text always renders
+# to the same prosody. That is what stopped the dozer from sounding like two people.
+# Natural VITS variation.  Setting these to 0 made every take identical, but also
+# flat and buzzy - it was one of the reasons the old renders sounded robotic.
+NOISE_SCALE = 0.667
+NOISE_W_SCALE = 0.8
+TAKES = 10          # natural takes per clause when picking the register
+TAKES_MAX = 18      # extra takes if every one of them drifts
+MAX_TAKE_DRIFT_ST = 2.2   # a take that slides register inside itself is not usable
+TAKE_TOLERANCE_ST = 2.5   # residual shift only; take bank already picked the closest natural take
+
+# Emotion only shifts speaking pace and a small amount of global tone colour.
 EMOTIONS = {
-    "neutral":   dict(length=1.00, noise=0.55, gain=0.0, tone=None),
-    "angry":     dict(length=0.93, noise=0.66, gain=1.0, tone="edge"),
-    "furious":   dict(length=0.88, noise=0.70, gain=1.8, tone="edge"),
-    "tired":     dict(length=1.16, noise=0.48, gain=-1.0, tone="dull"),
-    "smug":      dict(length=1.09, noise=0.58, gain=0.0, tone=None),
-    "panic":     dict(length=0.84, noise=0.68, gain=1.2, tone="edge"),
-    "scream":    dict(length=0.80, noise=0.72, gain=2.4, tone="edge"),
-    "muttering": dict(length=1.22, noise=0.45, gain=-1.5, tone="dull"),
-    "deadpan":   dict(length=1.05, noise=0.50, gain=0.0, tone=None),
+    "neutral":   dict(length=1.00, gain=0.0, tone=None),
+    "angry":     dict(length=0.94, gain=0.8, tone="edge"),
+    "furious":   dict(length=0.90, gain=1.4, tone="edge"),
+    "tired":     dict(length=1.14, gain=-0.8, tone="dull"),
+    "smug":      dict(length=1.08, gain=0.0, tone=None),
+    "panic":     dict(length=0.86, gain=1.0, tone="edge"),
+    "scream":    dict(length=0.82, gain=1.8, tone="edge"),
+    "muttering": dict(length=1.20, gain=-1.2, tone="dull"),
+    "deadpan":   dict(length=1.05, gain=0.0, tone=None),
 }
 
 # One target for the whole unit: median f0 of every clip is pulled to this value.
-VOICE_PITCH_HZ = 92.0   # nearest common point to the model's own register (raw median 96 Hz): least pitch correction
-MAX_PITCH_CORRECTION_SEMITONES = 4.0   # beyond this rubberband smears the consonants
+VOICE_PITCH_HZ = 92.0   # the unit's register: whole-line takes land within ~1 st of it on their own
+MAX_PITCH_CORRECTION_SEMITONES = 5.5   # beyond this rubberband smears the consonants
 
 
 def find_ffmpeg():
@@ -175,9 +189,10 @@ def write_piper_config(onnx_path, cfg_path):
 # synthesis
 # ---------------------------------------------------------------------------
 class Voice:
-    def __init__(self, model_dir=None, target_hz=None):
+    def __init__(self, model_dir=None, target_hz=None, pause_ms=110):
         self.model_dir = model_dir or MODEL_DIR
         self.target_hz = float(target_hz or VOICE_PITCH_HZ)
+        self.pause_ms = pause_ms
         onnx = os.path.join(self.model_dir, "model.onnx")
         if not os.path.isfile(onnx):
             raise SystemExit("voice missing - run: python3 tools/tts_engine.py --setup")
@@ -186,43 +201,281 @@ class Voice:
         self.sample_rate = self.voice.config.sample_rate
 
     def synth(self, text, path, emotion="neutral", length_scale=None, lock=True):
-        """Render one line and keep it inside the unit's single voice."""
+        """Render one line in ONE voice, sentence by sentence.
+
+        Two separate problems made a line sound like two different people:
+          1. piper renders one chunk per espeak clause, and each chunk picks its own
+             pitch register (101 Hz vs 136 Hz on the same line);
+          2. even inside a single utterance the model sometimes drifts a whole
+             octave on the last clause.
+        So each sentence is rendered as one utterance, several natural takes are
+        rendered, and the take already closest to the unit's register is kept.
+        Pitch shifting is only a small residual correction, capped - which is what
+        keeps the timbre stable instead of sounding synthetic.  The sentences are
+        then joined with a real pause, not with a click.
+        """
         import tempfile
         from piper import SynthesisConfig
-
         e = EMOTIONS.get(emotion, EMOTIONS["neutral"])
-        cfg = SynthesisConfig(
-            length_scale=length_scale if length_scale is not None else e["length"],
-            noise_scale=e["noise"],
-            noise_w_scale=0.8,
-            normalize_audio=True,
-        )
-        raw = path + ".raw.wav"
-        with wave.open(raw, "wb") as wf:
-            self.voice.synthesize_wav(text, wf, syn_config=cfg)
+        target = float(self.target_hz)
+        work = tempfile.mkdtemp(prefix="tts_")
+        pieces = []
+        pauses = []
+        sentences = split_clauses(text) or [text]
+        if len(sentences) > 1 and len(sentences) != len(split_sentences(text)):
+            pass  # clauses are only used to stop mid-sentence register jumps
 
-        if not lock:
-            shape_to_voice(raw, path, e, 1.0, None)
-            os.remove(raw)
-            return path
+        for index, sentence in enumerate(sentences):
+            cfg = SynthesisConfig(
+                length_scale=length_scale if length_scale is not None else e["length"],
+                noise_scale=NOISE_SCALE,
+                noise_w_scale=NOISE_W_SCALE,
+                normalize_audio=False,
+            )
+            # Take bank.  A take is only usable when it does not slide register
+            # inside itself; among the stable ones we keep the take that already sits
+            # closest to the unit's pitch, so the pitch shift stays small or vanishes.
+            best, best_err, best_pitch = None, 1e9, 0.0
+            fallback, fallback_err = None, 1e9
+            limit = TAKES_MAX if lock else 1
+            k = 0
+            while k < limit:
+                k += 1
+                raw = os.path.join(work, "s%02d_t%02d.wav" % (index, k - 1))
+                self.render_utterance(sentence, raw, cfg)
+                if not lock:
+                    best = raw
+                    break
+                info = measure(raw)
+                pitch, drift = info["mode"], info["drift"]
+                err = abs(12.0 * math.log2(pitch / target)) if pitch > 0 else 1e9
+                if drift <= MAX_TAKE_DRIFT_ST:
+                    if err < best_err:
+                        best, best_err, best_pitch = raw, err, pitch
+                    if best_err <= 0.4:      # already in the unit's register: keep it natural
+                        break
+                elif err < fallback_err:     # nothing stable yet: remember the least bad take
+                    fallback, fallback_err = raw, err
+                if k >= TAKES and best is not None and best_err <= 1.2:
+                    break                    # close enough; more takes would only cost time
+            if best is None:
+                best, best_err, best_pitch = fallback, fallback_err, (measure_pitch(fallback) if fallback else 0.0)
+            if best is None:
+                best = os.path.join(work, "s%02d_empty.wav" % index)
+                self.render_utterance(sentence, best, cfg)
 
-        # Two passes: shift once, measure what actually came out, shift the
-        # residual (<=1.5 st) once more. One pass leaves up to 3 st of drift on
-        # short lines, which is exactly what made the unit sound like several people.
-        ratio = pitch_ratio_for(raw, target_hz=self.target_hz)
-        first = path + ".pass1.wav"
-        shape_to_voice(raw, first, e, ratio, self.target_hz)
-        residual = pitch_ratio_for(first, target_hz=self.target_hz, limit=1.5)
-        if abs(12.0 * math.log2(residual)) > 0.2:
-            shape_to_voice(first, path, NEUTRAL_SHAPE, residual, self.target_hz)
-            os.remove(first)
-        else:
-            os.replace(first, path)
-        os.remove(raw)
+            if lock and best_pitch and abs(12.0 * math.log2(best_pitch / target)) > 0.4:
+                best = self.lock_to_register(best, target, work, "s%02d" % index)
+            pieces.append(best)
+            pauses.append(self.pause_ms if sentence.rstrip()[-1:] in ".!?؟…" else int(self.pause_ms * 0.65))
+
+        joined = join_with_variable_pauses(pieces, pauses, 22050)
+        joined = declick(joined, 22050)
+        line = os.path.join(work, "joined.wav")
+        audio_to_wav(joined, line)
+
+        # Verify the assembled line, not just its clauses: joining takes can still
+        # leave the whole line off the unit's register, and that check is the one
+        # that decides whether a line sounds like a different person.
+        if lock:
+            line = self.lock_to_register(line, target, work, "line", rounds=3)
+
+        # the emotion's tone and level are applied once, to the whole line
+        shape_to_voice(line, path, e, 1.0, target)
+        shutil.rmtree(work, ignore_errors=True)
         return path
 
 
-NEUTRAL_SHAPE = dict(length=1.0, noise=0.0, gain=0.0, tone=None)
+    def lock_to_register(self, path, target, work, tag, tolerance=0.6, rounds=4):
+        """Shift a take onto the unit's pitch by feedback, not by one blind guess.
+
+        The model wanders between two registers (about 74 Hz and 133 Hz), so the
+        first measurement can under-read: each round re-measures the audio that was
+        actually produced and corrects only what is still wrong, by at most 3
+        semitones at a time.  Formants are preserved, so the shift changes the
+        register but not the person.
+        """
+        best, best_err = path, abs(12.0 * math.log2(max(measure_pitch(path), 1e-6) / target))
+        for r in range(rounds):
+            if best_err <= tolerance:
+                break
+            got = measure_pitch(best)
+            if got <= 0:
+                break
+            semis = 12.0 * math.log2(target / got)
+            semis = max(-3.0, min(3.0, semis))
+            out = os.path.join(work, "%s_r%d.wav" % (tag, r))
+            shift_pitch(best, out, 2.0 ** (semis / 12.0))
+            err = abs(12.0 * math.log2(max(measure_pitch(out), 1e-6) / target))
+            if err <= best_err:
+                best, best_err = out, err
+            else:                     # the shift made it worse: stop, keep the better take
+                break
+        return best
+
+    def render_utterance(self, text, out_path, cfg):
+        """One VITS utterance for the whole line: merged phonemes, no seams."""
+        groups = self.voice.phonemize(clean_text(text))
+        merged = []
+        for i, group in enumerate(groups):
+            if i and merged and merged[-1] != " ":
+                merged.append(" ")
+            merged.extend(group)
+        if not merged:
+            merged = [" "]
+        ids = self.voice.phonemes_to_ids(merged)
+        audio = np.asarray(self.voice.phoneme_ids_to_audio(ids, cfg), dtype=np.float32).reshape(-1)
+        peak = float(np.max(np.abs(audio))) if audio.size else 0.0
+        if peak > 1e-8:
+            audio = audio / peak * 0.89
+        _write(audio, self.voice.config.sample_rate, out_path)
+        return out_path
+
+
+def measure(path):
+    """Register + internal drift of a take (dict with mode/drift/n)."""
+    try:
+        from pitch_stats import register
+        return register(path)
+    except Exception:
+        return dict(mode=0.0, drift=0.0, n=0)
+
+
+def measure_pitch(path):
+    """The take's register (density mode of its f0), used to pick and correct takes."""
+    return measure(path)["mode"]
+
+
+def max_abs_normalise(src, dst, ceiling=0.89):
+    a, sr = _read(src)
+    peak = float(np.max(np.abs(a))) or 1.0
+    _write(a / peak * ceiling, sr, dst)
+    return dst
+
+
+def declick(a, sr, ms=6.0):
+    """Ramp the edges of every non-silent island so a join can never click."""
+    n = int(sr * ms / 1000.0)
+    if n < 2 or len(a) < 3 * n:
+        return a
+    quiet = np.abs(a) < 1e-4
+    # ramp in/out wherever speech starts or stops
+    edges = np.flatnonzero(np.diff(quiet.astype(np.int8)))
+    out = a.copy()
+    for e in edges:
+        if quiet[e] and not quiet[e + 1]:          # onset
+            seg = slice(e + 1, min(len(out), e + 1 + n))
+            out[seg] *= np.linspace(0.0, 1.0, seg.stop - seg.start, dtype=np.float32)
+        elif not quiet[e] and quiet[e + 1]:        # offset
+            seg = slice(max(0, e + 1 - n), e + 1)
+            out[seg] *= np.linspace(1.0, 0.0, seg.stop - seg.start, dtype=np.float32)
+    return out
+
+
+def join_with_variable_pauses(paths_or_arrays, pauses_ms, sr):
+    out = []
+    for i, item in enumerate(paths_or_arrays):
+        if i:
+            gap_ms = pauses_ms[i] if i < len(pauses_ms) else pauses_ms[-1]
+            out.append(np.zeros(int(sr * gap_ms / 1000.0), dtype=np.float32))
+        a, _ = _read(item) if isinstance(item, str) else (item, sr)
+        out.append(np.asarray(a, dtype=np.float32).reshape(-1))
+    if not out:
+        return np.zeros(1, dtype=np.float32)
+    return np.concatenate(out)
+
+
+def join_with_pauses(paths_or_arrays, pause_ms, sr):
+    import numpy as np
+    gap = np.zeros(int(sr * pause_ms / 1000.0), dtype=np.float32)
+    out = []
+    for i, item in enumerate(paths_or_arrays):
+        if isinstance(item, str):
+            item, _ = _read(item)
+        if i:
+            out.append(gap)
+        out.append(np.asarray(item, dtype=np.float32).reshape(-1))
+    if not out:
+        return np.zeros(1, dtype=np.float32)
+    return np.concatenate(out)
+
+
+def audio_to_wav(a, path, sr=22050):
+    _write(a, sr, path)
+    return path
+
+
+def _read(path):
+    with wave.open(path, "rb") as w:
+        sr, ch = w.getframerate(), w.getnchannels()
+        a = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").astype(np.float32) / 32768.0
+    if ch == 2:
+        a = a.reshape(-1, 2).mean(axis=1)
+    return a, sr
+
+
+def _write(a, sr, path):
+    with wave.open(path, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes((np.clip(a, -1, 1) * 32767).astype("<i2").tobytes())
+    return path
+
+
+NEUTRAL_SHAPE = dict(length=1.0, gain=0.0, tone=None)
+
+SENTENCE_SPLIT = re.compile(r"(?<=[.!?؟…])\s+")
+
+
+CLAUSE_SPLIT = re.compile(r"(?<=[.!?؟…؛:,،])\s+")
+
+
+def split_clauses(text):
+    """Sentences and comma/semicolon clauses: the model changes register inside these."""
+    parts = [p.strip() for p in CLAUSE_SPLIT.split(text.strip()) if p.strip()]
+    return parts or [text.strip()]
+
+
+def split_sentences(text):
+    parts = [p.strip() for p in SENTENCE_SPLIT.split(text) if p.strip()]
+    return parts or [text]
+
+
+def render_sentences(voice, text, out_path, cfg, pause_ms=110, sr=None):
+    """Render each sentence, then join with a fixed pause.
+
+    Deliberately NOT using Piper's synthesize_wav: that concatenates sentence chunks
+    sample-to-sample, so a full stop becomes a 3 ms click and every sentence starts a
+    fresh prosody contour. A real pause plus one continuous pitch pass fixes both.
+    """
+    import numpy as np
+    pieces = []
+    for i, sentence in enumerate(split_sentences(text)):
+        audio = voice.phoneme_ids_to_audio(_sentence_ids(voice, sentence), syn_config=cfg)
+        audio = np.asarray(audio, dtype=np.float32).reshape(-1)
+        if i:
+            gap = np.zeros(int((sr or voice.config.sample_rate) * pause_ms / 1000.0), dtype=np.float32)
+            pieces.append(gap)
+        pieces.append(audio)
+    joined = np.concatenate(pieces) if pieces else np.zeros(1, dtype=np.float32)
+    peak = float(np.max(np.abs(joined))) or 1.0
+    joined = joined / peak * 0.89
+    with wave.open(out_path, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(voice.config.sample_rate)
+        wf.writeframes((np.clip(joined, -1, 1) * 32767).astype("<i2").tobytes())
+    return out_path
+
+
+def _sentence_ids(voice, sentence):
+    from piper.phoneme_ids import phonemes_to_ids
+    groups = voice.phonemize(sentence)
+    ids = []
+    for group in groups:
+        ids.extend(phonemes_to_ids(group, voice.config.phoneme_id_map))
+    return ids
 
 
 def pitch_ratio_for(path, target_hz=VOICE_PITCH_HZ, limit=MAX_PITCH_CORRECTION_SEMITONES):
@@ -237,6 +490,15 @@ def pitch_ratio_for(path, target_hz=VOICE_PITCH_HZ, limit=MAX_PITCH_CORRECTION_S
     semis = 12.0 * __import__("math").log2(target_hz / measured)
     semis = max(-limit, min(limit, semis))
     return 2.0 ** (semis / 12.0)
+
+
+def shift_pitch(src, dst, ratio, ffmpeg=None):
+    """Pitch-only shift with formants preserved (no tempo/EQ/level change)."""
+    ffmpeg = ffmpeg or find_ffmpeg()
+    af = "rubberband=pitch=%.6f:formant=preserved:pitchq=quality" % ratio
+    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", src, "-af", af,
+                    "-ac", "1", "-ar", "22050", "-acodec", "pcm_s16le", dst], check=True)
+    return dst
 
 
 def shape_to_voice(src, dst, e, ratio=1.0, target_hz=None, ffmpeg=None):
@@ -264,11 +526,8 @@ def shape_to_voice(src, dst, e, ratio=1.0, target_hz=None, ffmpeg=None):
     if e.get("gain"):
         af.append("volume=%.1fdB" % e["gain"])
     af += [
-        # light, slow compression keeps the loud/quiet acting instead of flattening it
-        "acompressor=threshold=-14dB:ratio=1.6:attack=15:release=200",
-        # a very short, quiet reverb gives the voice a body (a dry 22 kHz mono synth is
-        # what reads as "robotic"); mixed low so intelligibility stays intact
-        "aecho=in_gain=0.92:out_gain=0.85:delays=28|52:decays=0.16|0.09",
+        # very light, slow compression: keeps the acting, avoids the "inside a tin" sound
+        "acompressor=threshold=-16dB:ratio=1.5:attack=20:release=250",
         "alimiter=limit=0.95",
     ]
     cmd = [ffmpeg, "-y", "-loglevel", "error", "-i", src, "-af", ",".join(af),
