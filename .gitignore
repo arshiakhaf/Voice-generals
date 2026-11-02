@@ -1,6 +1,7 @@
 # build output
 build/
 preview/*.html
+preview/*.mp3
 preview/audio/
 # cached EA data (never commit the game's own files)
 .cache/
